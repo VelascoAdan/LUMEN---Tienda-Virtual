@@ -1,0 +1,41 @@
+# Reporte Técnico: LUMEN Storefront Protocol
+
+## 1. Arquitectura de Almacenamiento y PDAs
+LUMEN implementa un sistema de gestión de estado basado íntegramente en **Program Derived Addresses (PDAs)**, eliminando la necesidad de índices globales y optimizando la escalabilidad horizontal del marketplace.
+
+### Derivación de Direcciones (Seeds)
+Cada producto en la tienda posee una dirección determinística única generada mediante:
+- **Prefijo de Versión**: `b"item_v1"` (estático).
+- **Autoridad**: `owner.key()` (la Pubkey del creador).
+- **Identificador**: `title.as_bytes()` (el nombre del producto).
+
+Esta combinación garantiza que un mismo usuario pueda gestionar múltiples productos distintos sin colisiones, manteniendo la propiedad verificable on-chain.
+
+
+
+## 2. Modelo de Datos y Eficiencia de Memoria
+El espacio de cada cuenta `StoreItem` ha sido calculado con precisión para minimizar el costo de **Rent** (alquiler de espacio) en la red:
+
+| Campo | Tamaño (Bytes) | Descripción |
+| :--- | :--- | :--- |
+| **Discriminador** | 8 | Identificador único de cuenta Anchor. |
+| **Owner** | 32 | Pubkey del propietario con permisos de edición. |
+| **Title** | 36 | String con prefijo de 4 bytes + 32 bytes de contenido. |
+| **Price** | 8 | Precio almacenado en formato `u64` (lamports). |
+| **Is Available** | 1 | Flag booleano para estado de inventario. |
+| **Bump** | 1 | Semilla de seguridad para validación canónica de la PDA. |
+
+**Total: 86 Bytes** por producto.
+
+## 3. Lógica de Control y Seguridad
+El programa aplica un modelo de seguridad basado en restricciones declarativas de Anchor:
+
+- **Propiedad Estricta**: Las instrucciones `update_item` y `delete_item` utilizan la restricción `has_one = owner`, lo que impide que cualquier cuenta que no sea el creador original modifique los datos.
+- **Validación de Entradas**: Se aplican reglas de negocio mediante la macro `require!`, limitando la longitud del título (1-32 caracteres) y asegurando precios positivos (`> 0`).
+- **Recuperación de Activos**: La función `delete_item` emplea el atributo `close = owner`, que realiza una limpieza atómica de la cuenta en la red y transfiere el balance de SOL (renta) de vuelta a la wallet del propietario.
+
+## 4. Gestión de Errores (LumenError)
+El sistema utiliza un enum de errores personalizados para proporcionar feedback claro en el cliente:
+- `Unauthorized`: Intento de acceso sin permisos de firma.
+- `InvalidTitleLength`: Incumplimiento de los límites de memoria para el título.
+- `InvalidPrice`: Intento de registro con valor financiero nulo o negativo.
