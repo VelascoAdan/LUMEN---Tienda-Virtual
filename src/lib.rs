@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("hpGG7v5Y5XFtT96thymVC9sAxUNUGPHygjuzgoTcFp3");
+declare_id!("7tfUcKdkY7BVe6wqV4rASb2GZ6YRehJ64xpZac7Sxrd9");
 
 #[program]
 pub mod lumen {
@@ -60,9 +60,7 @@ pub mod lumen {
     }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                               MODELO DE DATOS                              */
-/* -------------------------------------------------------------------------- */
+                               MODELO DE DATOS                              
 
 #[account]
 pub struct StoreItem {
@@ -84,9 +82,9 @@ impl StoreItem {
     pub const LEN: usize = 8 + 32 + 36 + 8 + 1 + 1;
 }
 
-/* -------------------------------------------------------------------------- */
-/*                               CONTEXTOS (PDAs)                             */
-/* -------------------------------------------------------------------------- */
+
+                               CONTEXTOS (PDAs)                             
+
 
 #[derive(Accounts)]
 #[instruction(title: String)]
@@ -146,10 +144,8 @@ pub struct DeleteItem<'info> {
     pub owner: Signer<'info>,
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                   ERRORES                                  */
-/* -------------------------------------------------------------------------- */
-
+                                  ERRORES  
+                                      
 #[error_code]
 pub enum LumenError {
     #[msg("No tienes permisos para modificar este producto.")]
